@@ -9,13 +9,7 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Add basic logging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
-
-// In-memory data storage (replace with database in production)
+// In-memory data storage
 let users = [
   {
     id: 7609121993,
@@ -58,11 +52,6 @@ const getUserById = (id) => {
   return users.find(user => user.id === id);
 };
 
-// Helper function to get user by username
-const getUserByUsername = (username) => {
-  return users.find(user => user.username === username);
-};
-
 // Basic route for testing
 app.get('/', (req, res) => {
   res.json({ 
@@ -77,7 +66,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Get all users (admin only)
+// Get all users
 app.get('/api/users', (req, res) => {
   try {
     const userList = users.map(user => ({
@@ -101,102 +90,12 @@ app.get('/api/users', (req, res) => {
   }
 });
 
-// Get user by ID
-app.get('/api/users/:id', (req, res) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const user = getUserById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    res.json(user);
-  } catch (error) {
-    console.error('Error in /api/users/:id:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create new user
-app.post('/api/users', (req, res) => {
-  try {
-    const { id, username, firstName, lastName } = req.body;
-    
-    // Check if user already exists
-    if (getUserById(id)) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-    
-    const newUser = {
-      id: parseInt(id),
-      username: username || `user_${id}`,
-      firstName: firstName || 'User',
-      lastName: lastName || '',
-      balance: 0.0,
-      totalEarned: 0.0,
-      referrals: [],
-      isNewUser: true,
-      hasWelcomeBonus: false,
-      freeFlips: 3,
-      joinDate: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    res.status(201).json(newUser);
-  } catch (error) {
-    console.error('Error in POST /api/users:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Update user
-app.put('/api/users/:id', (req, res) => {
-  try {
-    const userId = parseInt(req.params.id);
-    const userIndex = users.findIndex(user => user.id === userId);
-    
-    if (userIndex === -1) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    users[userIndex] = { ...users[userIndex], ...req.body };
-    res.json(users[userIndex]);
-  } catch (error) {
-    console.error('Error in PUT /api/users/:id:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // Get all requests
 app.get('/api/requests', (req, res) => {
   try {
     res.json(requests);
   } catch (error) {
     console.error('Error in /api/requests:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create new request
-app.post('/api/requests', (req, res) => {
-  try {
-    const { userId, user, type, amount } = req.body;
-    
-    const newRequest = {
-      id: requests.length + 1,
-      userId: parseInt(userId),
-      user: user,
-      type: type,
-      amount: parseFloat(amount),
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    };
-    
-    requests.push(newRequest);
-    res.status(201).json(newRequest);
-  } catch (error) {
-    console.error('Error in POST /api/requests:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -271,26 +170,12 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage()
+    uptime: process.uptime()
   });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
 });
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Admin Dashboard: http://localhost:${PORT}/api/users`);
-  console.log(`📋 Requests: http://localhost:${PORT}/api/requests`);
-  console.log(`📈 Stats: http://localhost:${PORT}/api/stats`);
+  console.log(`📊 API: http://localhost:${PORT}/`);
   console.log(`🏥 Health: http://localhost:${PORT}/api/health`);
 }); 
