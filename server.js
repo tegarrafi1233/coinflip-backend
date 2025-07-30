@@ -9,6 +9,12 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Add basic logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
 // In-memory data storage (replace with database in production)
 let users = [
   {
@@ -57,7 +63,19 @@ const getUserByUsername = (username) => {
   return users.find(user => user.username === username);
 };
 
-// Routes
+// Basic route for testing
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'CoinFlip Backend API is running!',
+    timestamp: new Date().toISOString(),
+    endpoints: [
+      '/api/health',
+      '/api/users',
+      '/api/requests',
+      '/api/stats'
+    ]
+  });
+});
 
 // Get all users (admin only)
 app.get('/api/users', (req, res) => {
@@ -78,6 +96,7 @@ app.get('/api/users', (req, res) => {
     
     res.json(userList);
   } catch (error) {
+    console.error('Error in /api/users:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -94,6 +113,7 @@ app.get('/api/users/:id', (req, res) => {
     
     res.json(user);
   } catch (error) {
+    console.error('Error in /api/users/:id:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -125,6 +145,7 @@ app.post('/api/users', (req, res) => {
     users.push(newUser);
     res.status(201).json(newUser);
   } catch (error) {
+    console.error('Error in POST /api/users:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -142,6 +163,7 @@ app.put('/api/users/:id', (req, res) => {
     users[userIndex] = { ...users[userIndex], ...req.body };
     res.json(users[userIndex]);
   } catch (error) {
+    console.error('Error in PUT /api/users/:id:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -151,6 +173,7 @@ app.get('/api/requests', (req, res) => {
   try {
     res.json(requests);
   } catch (error) {
+    console.error('Error in /api/requests:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -173,6 +196,7 @@ app.post('/api/requests', (req, res) => {
     requests.push(newRequest);
     res.status(201).json(newRequest);
   } catch (error) {
+    console.error('Error in POST /api/requests:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -211,6 +235,7 @@ app.post('/api/requests/:id/:action', (req, res) => {
     
     res.json(requests[requestIndex]);
   } catch (error) {
+    console.error('Error in POST /api/requests/:id/:action:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -236,13 +261,30 @@ app.get('/api/stats', (req, res) => {
       totalWithdrawals
     });
   } catch (error) {
+    console.error('Error in /api/stats:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Route not found' });
 });
 
 app.listen(PORT, () => {
@@ -250,4 +292,5 @@ app.listen(PORT, () => {
   console.log(`📊 Admin Dashboard: http://localhost:${PORT}/api/users`);
   console.log(`📋 Requests: http://localhost:${PORT}/api/requests`);
   console.log(`📈 Stats: http://localhost:${PORT}/api/stats`);
+  console.log(`🏥 Health: http://localhost:${PORT}/api/health`);
 }); 
